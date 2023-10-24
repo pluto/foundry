@@ -1,10 +1,11 @@
 use crate::{
     eth::backend::db::{
         Db, MaybeForkedDatabase, MaybeHashDatabase, SerializableAccountRecord, SerializableState,
-        StateDb,
+        StateDb, AsHashDB,
     },
     revm::primitives::AccountInfo,
     Address, U256,
+    mem::state::{trie_hash_db, storage_trie_db},
 };
 use ethers::{prelude::H256, types::BlockId};
 pub use foundry_evm::executor::fork::database::ForkedDatabase;
@@ -98,6 +99,18 @@ impl MaybeHashDatabase for ForkedDatabase {
         *db.accounts.write() = accounts;
         *db.storage.write() = storage;
         *db.block_hashes.write() = block_hashes;
+    }
+
+    fn maybe_as_hash_db(&self) -> Option<(AsHashDB, H256)> {
+        Some(trie_hash_db(&self.database().accounts))
+    }
+
+    fn maybe_account_db(&self, addr: Address) -> Option<(AsHashDB, H256)> {
+        if let Some(acc) = self.database().accounts.get(&addr.to_alloy()) {
+            Some(storage_trie_db(&acc.storage))
+        } else {
+            Some(storage_trie_db(&Default::default()))
+        }
     }
 }
 
