@@ -285,6 +285,16 @@ pub enum EthRequest {
     )]
     TraceBlock(BlockNumber),
 
+    // Trace block
+    #[cfg_attr(
+        feature = "serde",
+        serde(rename = "debug_traceBlockByNumber")
+    )]
+    DebugTraceBlockByNumber(
+        #[cfg_attr(feature = "serde", serde(deserialize_with = "lenient_block_number"))]
+        BlockNumber,
+        GethDebugTracingOptions),
+
     // Custom endpoints, they're not extracted to a separate type out of serde convenience
     /// send transactions impersonating specific account and contract addresses.
     #[cfg_attr(

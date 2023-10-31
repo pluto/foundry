@@ -77,6 +77,7 @@ use foundry_evm::{
 use foundry_utils::types::{ToAlloy, ToEthers};
 use futures::channel::mpsc::{unbounded, UnboundedSender};
 use hash_db::HashDB;
+use itertools::Itertools;
 use parking_lot::{Mutex, RwLock};
 use std::{
     collections::HashMap,
@@ -1854,6 +1855,14 @@ impl Backend {
         self.blockchain.storage.read().transactions.get(&hash).map(|tx| tx.geth_trace(opts))
     }
 
+    pub fn mined_geth_trace_transactions(
+        &self,
+        hash: H256,
+        opts: GethDebugTracingOptions,
+    ) -> Result<Vec<DefaultFrame>, BlockchainError> {
+        Ok(self.blockchain.storage.read().blocks.get(&hash).unwrap().transactions.iter().map(|tx| self.mined_geth_trace_transaction(tx.hash(), opts.clone()).unwrap() ).collect_vec())
+    }
+
     /// Returns the traces for the given block
     pub async fn trace_block(&self, block: BlockNumber) -> Result<Vec<Trace>, BlockchainError> {
         let number = self.convert_block_number(Some(block));
@@ -2098,7 +2107,6 @@ impl Backend {
         self.with_database_at(block_request, |block_db, _| {
             trace!(target: "backend", "get proof for {:?} at {:?}", address, block_number);
             let (db, root) = block_db.maybe_as_hash_db().ok_or(BlockchainError::DataUnavailable)?;
-
             let data: &dyn HashDB<_, _> = db.deref();
             let mut recorder = Recorder::new();
             let trie = RefTrieDB::new(&data, &root.0)

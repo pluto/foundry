@@ -53,7 +53,7 @@ use ethers::{
         },
         Address, Block, BlockId, BlockNumber, Bytes, FeeHistory, Filter, FilteredParams,
         GethDebugTracingOptions, GethTrace, Log, Trace, Transaction, TransactionReceipt, TxHash,
-        TxpoolContent, TxpoolInspectSummary, TxpoolStatus, H256, U256, U64,
+        TxpoolContent, TxpoolInspectSummary, TxpoolStatus, H256, U256, U64, StructLog,
     },
     utils::rlp,
 };
@@ -68,6 +68,7 @@ use foundry_evm::{
 use foundry_utils::types::ToEthers;
 use futures::channel::{mpsc::Receiver, oneshot};
 use parking_lot::RwLock;
+use serde::{Serialize};
 use std::{collections::HashSet, future::Future, sync::Arc, time::Duration};
 use tracing::{trace, warn};
 
@@ -265,6 +266,7 @@ impl EthApi {
             }
             EthRequest::TraceTransaction(tx) => self.trace_transaction(tx).await.to_rpc_result(),
             EthRequest::TraceBlock(block) => self.trace_block(block).await.to_rpc_result(),
+            EthRequest::DebugTraceBlockByNumber(block, opts) => self.debug_trace_block_by_number(block, opts).await.to_rpc_result(),
             EthRequest::ImpersonateAccount(addr) => {
                 self.anvil_impersonate_account(addr).await.to_rpc_result()
             }
@@ -1413,6 +1415,45 @@ impl EthApi {
         node_info!("trace_block");
         self.backend.trace_block(block).await
     }
+
+    /// Handler for RPC call: `debug_traceBlockByNumber`
+    pub async fn debug_trace_block_by_number(&self, block: BlockNumber, opts: GethDebugTracingOptions) -> Result<ResultGethExecTraces> {
+        node_info!("debug_traceBlockByNumber");
+        let b = self.backend.block_by_number(block).await.unwrap().unwrap(); // TODO ok_or(BlockchainError::BlockNotFound).unwrap();
+        let transactions = self.backend.mined_geth_trace_transactions(b.hash.unwrap(), opts).unwrap();
+
+        let mut trace: Vec<ResultGethExecTrace> = vec![];
+        for t in transactions.iter() {
+            trace.push(ResultGethExecTrace{
+                result: InnerDefaultFrame{
+                    failed: t.failed,
+                    gas: t.gas.as_u64(),
+                    return_value: t.return_value.clone(),
+                    struct_logs: t.struct_logs.clone()
+                }
+            });
+        }
+
+        Ok(ResultGethExecTraces{ 0: trace })
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct ResultGethExecTraces(pub Vec<ResultGethExecTrace>);
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct ResultGethExecTrace {
+    pub result: InnerDefaultFrame,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+pub struct InnerDefaultFrame {
+    pub failed: bool,
+    pub gas: u64, // TODO was U256 before, and it's stringified in the DefaultFrame version
+    #[serde(rename = "returnValue")]
+    pub return_value: Bytes,
+    #[serde(rename = "structLogs")]
+    pub struct_logs: Vec<StructLog>,
 }
 
 // == impl EthApi anvil endpoints ==
