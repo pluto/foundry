@@ -225,6 +225,16 @@ impl<T: DatabaseRef<Error = DatabaseError>> MaybeHashDatabase for CacheDB<T> {
     fn maybe_as_hash_db(&self) -> Option<(AsHashDB, H256)> {
         Some(trie_hash_db(&self.accounts))
     }
+
+    // TODO: added by matt
+    // fn maybe_account_db(&self, addr: Address) -> Option<(AsHashDB, H256)> {
+    //     if let Some(acc) = self.accounts.get(&addr.to_alloy()) {
+    //         Some(storage_trie_db(&acc.storage))
+    //     } else {
+    //         Some(storage_trie_db(&Default::default()))
+    //     }
+    // }
+
     fn clear_into_snapshot(&mut self) -> StateSnapshot {
         let db_accounts = std::mem::take(&mut self.accounts);
         let mut accounts = HashMap::new();

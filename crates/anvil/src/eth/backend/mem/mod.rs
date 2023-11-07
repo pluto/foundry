@@ -1648,9 +1648,10 @@ impl Backend {
 
         if block_number.to_alloy() < self.env.read().block.number {
             {
+                let db = self.db.read().await;
                 let mut states = self.states.write();
 
-                if let Some((state, block)) = self
+                if let Some((_state, block)) = self
                     .get_block(block_number.as_u64())
                     .and_then(|block| Some((states.get(&block.header.hash())?, block)))
                 {
@@ -1664,7 +1665,10 @@ impl Backend {
                         gas_limit: block.header.gas_limit.to_alloy(),
                         ..Default::default()
                     };
-                    return Ok(f(Box::new(state), block))
+                    // TODO matt: this doesn't really take into account block_num for state db
+                    return Ok(f(Box::new(&*db), block));
+                    // return Ok(f(Box::new(state), block));
+                    // return Ok(f(Box::new(CacheDB::new(state)), block));
                 }
             }
 
