@@ -23,11 +23,18 @@ bytes = { version = "1.4" }
 open-fastrlp = { version = "0.1.4", optional = true }
 
 # trie
-hash-db = { version = "0.15", default-features = false }
-hash256-std-hasher = { version = "0.15", default-features = false }
-triehash = { version = "0.8", default-features = false }
-reference-trie = { version = "0.25" }
-keccak-hasher = { version = "0.15" }
+# hash-db = { version = "0.15", default-features = false }
+# hash256-std-hasher = { version = "0.15", default-features = false }
+# triehash = { version = "0.8", default-features = false }
+# reference-trie = { version = "0.25" }
+# keccak-hasher = { version = "0.15" }
+
+triehash = { path = "../../../../trie/trie-root", package = "trie-root" }
+hash256-std-hasher = { path = "../../../../trie/hash256-std-hasher" }
+hash-db = { path = "../../../../trie/hash-db" }
+reference-trie = { path = "../../../../trie/test-support/reference-trie" }
+keccak-hasher = { path = "../../../../trie/test-support/keccak-hasher" }
+
 
 [dev-dependencies]
 serde.workspace = true

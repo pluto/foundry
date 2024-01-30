@@ -19,7 +19,7 @@ where
     K: AsRef<[u8]> + Ord,
     V: AsRef<[u8]>,
 {
-    H256::from(triehash::trie_root::<KeccakHasher, _, _, _>(input))
+    H256::from(triehash::trie_root::<KeccakHasher, ReferenceTrieStream, _, _, _>(input, None))
 }
 
 /// Generates a key-hashed (secure) trie root hash for a vector of key-value tuples.
@@ -29,7 +29,7 @@ where
     K: AsRef<[u8]>,
     V: AsRef<[u8]>,
 {
-    H256::from(triehash::sec_trie_root::<KeccakHasher, _, _, _>(input))
+    H256::from(triehash::sec_trie_root::<KeccakHasher, ReferenceTrieStream, _, _, _>(input, None))
 }
 
 /// Generates a trie root hash for a vector of values
@@ -38,5 +38,5 @@ where
     I: IntoIterator<Item = V>,
     V: AsRef<[u8]>,
 {
-    H256::from(triehash::ordered_trie_root::<KeccakHasher, I>(input))
+    H256::from(triehash::ordered_trie_root::<KeccakHasher, ReferenceTrieStream, I>(input, None))
 }
